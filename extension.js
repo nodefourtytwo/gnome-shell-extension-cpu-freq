@@ -68,7 +68,6 @@ CpuFreq.prototype = {
             let cpufreq_output2 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -p");
             if(cpufreq_output2[0]) governoractual = cpufreq_output2[1].toString().split("\n", 1)[0].split(" ")[2].toString();
             
-            global.log(governoractual);
             for each (let governor in governorslist){
                 let governortemp;
                 if(governoractual==governor)
@@ -115,7 +114,6 @@ CpuFreq.prototype = {
                 
                 if(this.cpuFreqSelectorPath){
                     governorItem.connect('activate', Lang.bind(this, function() {
-                        global.log("label:"+this.cpuFreqSelectorPath+" -g "+governorLabel.text);
                         this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text);
                     }));
                 }
