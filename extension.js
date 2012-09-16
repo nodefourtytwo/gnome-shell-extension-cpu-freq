@@ -56,6 +56,11 @@ CpuFreq.prototype = {
         return null;
     },
     
+    _get_cpu_number: function(){
+        let ret = GLib.spawn_command_line_sync("grep -c processor /proc/cpuinfo");
+        return ret[1].toString().split("\n", 1)[0];
+    },
+    
     _get_governors: function(){
         let governors=new Array();
         let governorslist=new Array();
@@ -114,7 +119,9 @@ CpuFreq.prototype = {
                 
                 if(this.cpuFreqSelectorPath){
                     governorItem.connect('activate', Lang.bind(this, function() {
-                        this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text);
+                        for (i = 0 ;i < this._get_cpu_number();i++){
+                            this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text+" -c "+i);
+                        }
                     }));
                 }
             }
