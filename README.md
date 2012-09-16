@@ -8,15 +8,15 @@ There is a bit of work to make it work though.
 cpufreq
 -------
 
-You need CPU Freq set up to use it.
-Archlinux: https://wiki.archlinux.org/index.php/CPU_Frequency_Scaling
-(if you have a good tutorial for your distro of choice, file a bug, I'll add it to the list)
+You need CPU Freq set up to use it.  
+Archlinux: https://wiki.archlinux.org/index.php/CPU_Frequency_Scaling  
+(if you have a good tutorial for your distro of choice, file a bug, I'll add it to the list)  
 
 You also need cpufreq-selector, which is usually in the gnome-applets package.
 
 The best way to test you have these is to type in terminal:
-> which cpufreq-info
-> which cpufreq-selector
+> which cpufreq-info  
+> which cpufreq-selector  
 
 and check if they exist.
 
@@ -34,14 +34,14 @@ Create and edit the file: /var/lib/polkit-1/localauthority/50-local.d/org.gnome.
 
 with:
 
-> [org.gnome.cpufreqselector]
-> Identity=unix-user:<USER>
-> Action=org.gnome.cpufreqselector
-> ResultAny=no
-> ResultInactive=no
-> ResultActive=yes
+> [org.gnome.cpufreqselector]  
+> Identity=unix-user:**USER**  
+> Action=org.gnome.cpufreqselector  
+> ResultAny=no  
+> ResultInactive=no  
+> ResultActive=yes  
 
-replacing <USER> with your username.
+replacing **USER** with your username.
 
 
 
