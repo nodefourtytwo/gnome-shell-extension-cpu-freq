@@ -14,8 +14,12 @@ Archlinux: https://wiki.archlinux.org/index.php/CPU_Frequency_Scaling
 
 You also need cpufreq-selector, which is usually in the gnome-applets package.
 
+cpupower is now also supported
+
 The best way to test you have these is to type in terminal:
-> which cpufreq-info  
+> which cpufreq-info
+or
+> which cpupower
 > which cpufreq-selector  
 
 and check if they exist.
