@@ -25,8 +25,8 @@ CpuFreq.prototype = {
             style_class: "cpufreq-label"
         });
 
-        this.cpuFreqInfoPath = this._detectCpuFreqInfo();
         this.cpuFreqSelectorPath = this._detectCpuFreqSelector();
+        this.cpuPowerPath = this._detectCpuPower();
 
         this._build_ui();
         //update every 5 seconds
@@ -37,21 +37,21 @@ CpuFreq.prototype = {
         }));
         
     },
-
-    _detectCpuFreqInfo: function(){
-        //detect if cpufreq-info is installed
-        let ret = GLib.spawn_command_line_sync("which cpufreq-info");
-        if ( (ret[0]) && (ret[3] == 0) ) {//if yes
-            return ret[1].toString().split("\n", 1)[0];//find the path of cpufreq-info
-        }
-        return null;
-    },
     
     _detectCpuFreqSelector: function(){
         //detect if cpufreq-selector is installed
         let ret = GLib.spawn_command_line_sync("which cpufreq-selector");
         if ( (ret[0]) && (ret[3] == 0) ) {//if yes
             return ret[1].toString().split("\n", 1)[0];//find the path of cpufreq-info
+        }
+        return null;
+    },
+
+    _detectCpuPower: function(){
+        //detect if cpupower is installed
+        let ret = GLib.spawn_command_line_sync("which cpupower");
+        if ( (ret[0]) && (ret[3] == 0) ) {//if yes
+            return ret[1].toString().split("\n", 1)[0];//find the path of cpupower
         }
         return null;
     },
@@ -64,15 +64,15 @@ CpuFreq.prototype = {
     _get_governors: function(){
         let governors=new Array();
         let governorslist=new Array();
-        if (this.cpuFreqInfoPath){
-            //get the list of available governors
-            let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -g");
-            if(cpufreq_output1[0]) governorslist = cpufreq_output1[1].toString().split("\n", 1)[0].split(" ");
-            
+        if (this.cpuPowerPath){ // we now use cpupower
+            //get the list of available governors	
+            let cpupower_output1 = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -g");
+            if(cpupower_output1[0]) governorslist = cpupower_output1[1].toString().split("\n")[1].split(" ");
+
             //get the actual governor
-            let cpufreq_output2 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -p");
-            if(cpufreq_output2[0]) governoractual = cpufreq_output2[1].toString().split("\n", 1)[0].split(" ")[2].toString();
-            
+            let cpupower_output2 = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -p");
+            if(cpupower_output2[0]) governoractual = cpupower_output2[1].toString().split("\n")[1].split(" ")[2].toString();
+	
             for each (let governor in governorslist){
                 let governortemp;
                 if(governoractual==governor)
@@ -81,16 +81,16 @@ CpuFreq.prototype = {
                     governortemp=[governor,false];
                 governors.push(governortemp);                
             }
-        }
+    	}
         
         return governors;
     },
 
     _update_freq: function() {
         let freqInfo=null;
-        if (this.cpuFreqInfoPath){
-            let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");//get the output of the cpufreq-info -fm command
-            if(cpufreq_output[0]) freqInfo = cpufreq_output[1].toString().split("\n", 1)[0];
+        if (this.cpuPowerPath){
+            let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");//get output of cpupower frequency-info -fm
+            if(cpupower_output[0]) freqInfo = cpupower_output[1].toString().split("\n")[1];
             if (freqInfo){
                 this.title=freqInfo;
             }
