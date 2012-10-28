@@ -17,9 +17,9 @@ You also need cpufreq-selector, which is usually in the gnome-applets package.
 cpupower is now also supported
 
 The best way to test you have these is to type in terminal:
-> which cpufreq-info
+> which cpufreq-info  
 or
-> which cpupower
+> which cpupower  
 > which cpufreq-selector  
 
 and check if they exist.
@@ -53,6 +53,5 @@ I'm open to any advice to make this easier/better.
 
 Thanks
 ------
-https://github.com/LeCoyote
-
-https://github.com/victornoel
+https://github.com/LeCoyote  
+https://github.com/victornoel  
