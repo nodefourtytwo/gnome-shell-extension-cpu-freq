@@ -47,6 +47,11 @@ with:
 
 replacing **USER** with your username.
 
+An easier solution in Archlinux to give privileges to the user
+--------------------------------------------------------------
+
+The package 'desktop-privileges' from aur provides an easier method to set privileges for cpu frequency selector.  
+The user needs to be in the power group though.
 
 
 I'm open to any advice to make this easier/better.
@@ -54,4 +59,5 @@ I'm open to any advice to make this easier/better.
 Thanks
 ------
 https://github.com/LeCoyote  
-https://github.com/victornoel  
+https://github.com/victornoel
+https://github.com/sonic414
