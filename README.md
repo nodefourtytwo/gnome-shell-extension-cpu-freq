@@ -8,13 +8,14 @@ There is a bit of work to make it work though.
 cpufreq
 -------
 
-You need CPU Freq set up to use it.  
-Archlinux: https://wiki.archlinux.org/index.php/CPU_Frequency_Scaling  
-(if you have a good tutorial for your distro of choice, file a bug, I'll add it to the list)  
+You need CPU Frequency scaling set up to use it.  
+**Archlinux**: https://wiki.archlinux.org/index.php/CPU_Frequency_Scaling
+(if you have a good tutorial for your distro of choice, file a bug, I'll add it to the list)
 
 You also need cpufreq-selector, which is usually in the gnome-applets package.
 
 cpupower is now also supported
+**Fedora 18**: cpupower is available in the kernel-tools package
 
 The best way to test you have these is to type in terminal:
 > which cpufreq-info  
