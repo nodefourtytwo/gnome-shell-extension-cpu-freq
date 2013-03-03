@@ -18,7 +18,15 @@ CpuFreq.prototype = {
     _init: function(){
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'cpufreq');
         this.governorchanged = false;
+        
+        //cpupower used
         this.cpupower = false;
+        
+        //cpufreqinfo or cpupower installed
+        this.util_present = true;
+        //cpufreq-selector installed
+        this.selector_present = true;
+        
         this.statusLabel = new St.Label({
             text: "--",
             style_class: "cpufreq-label"
@@ -30,18 +38,26 @@ CpuFreq.prototype = {
             if(this.cpuPowerPath){
                 this.cpupower = true;
             }
+            else{
+                this.util_present = false;
+            }
         }
 
         this.cpuFreqSelectorPath = this._detectCpuFreqSelector();
+        if(!this.cpuFreqSelectorPath){
+            this.selector_present = false;
+        }
 
         this._build_ui();
-        //update every 5 seconds
-        event = GLib.timeout_add_seconds(0, 5, Lang.bind(this, function () {
-            this._update_freq();
-            this._update_popup();
-            return true;
-        }));
         
+        if(this.util_present){
+            //update every 5 seconds
+            event = GLib.timeout_add_seconds(0, 5, Lang.bind(this, function () {
+                this._update_freq();
+                this._update_popup();
+                return true;
+            }));
+        }
     },
 
     _detectCpuFreqInfo: function(){
@@ -121,20 +137,25 @@ CpuFreq.prototype = {
 
     _update_freq: function() {
         let freqInfo=null;
-        if (this.cpuFreqInfoPath){
-            let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");//get the output of the cpufreq-info -fm command
-            if(cpufreq_output[0]) freqInfo = cpufreq_output[1].toString().split("\n", 1)[0];
-            if (freqInfo){
-                this.title=freqInfo;
+        if(this.util_present){
+            if (this.cpuFreqInfoPath){
+                let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");//get the output of the cpufreq-info -fm command
+                if(cpufreq_output[0]) freqInfo = cpufreq_output[1].toString().split("\n", 1)[0];
+                if (freqInfo){
+                    this.title=freqInfo;
+                }
+            }
+            
+            if (this.cpuPowerPath){
+                let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");//get output of cpupower frequency-info -fm
+                if(cpupower_output[0]) freqInfo = cpupower_output[1].toString().split("\n")[1];
+                if (freqInfo){
+                    this.title=freqInfo;
+                }
             }
         }
-        
-        if (this.cpuPowerPath){
-            let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");//get output of cpupower frequency-info -fm
-            if(cpupower_output[0]) freqInfo = cpupower_output[1].toString().split("\n")[1];
-            if (freqInfo){
-                this.title=freqInfo;
-            }
+        else{
+            this.title="!"
         }
         
         this.statusLabel.set_text(this.title);
@@ -142,31 +163,54 @@ CpuFreq.prototype = {
     
     _update_popup: function() {
         this.menu.removeAll();
-    
-        //get the available governors
-        this.governors = this._get_governors();
-        
-        //build the popup menu
-        if (this.governors.length>0){
-            let governorItem;
-            for each (let governor in this.governors){
-                governorItem = new PopupMenu.PopupMenuItem("");
-                let governorLabel=new St.Label({
-                    text:governor[0],
-                    style_class: "sm-label"
-                });
-                governorItem.addActor(governorLabel);
-                governorItem.setShowDot(governor[1]);
-                this.menu.addMenuItem(governorItem);
-                
-                if(this.cpuFreqSelectorPath){
-                    governorItem.connect('activate', Lang.bind(this, function() {
-                        for (i = 0 ;i < this._get_cpu_number();i++){
-                            this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text+" -c "+i);
-                        }
-                    }));
+        if(this.util_present){  
+            //get the available governors
+            this.governors = this._get_governors();
+            
+            //build the popup menu
+            if (this.governors.length>0){
+                let governorItem;
+                for each (let governor in this.governors){
+                    governorItem = new PopupMenu.PopupMenuItem("");
+                    let governorLabel=new St.Label({
+                        text:governor[0],
+                        style_class: "sm-label"
+                    });
+                    governorItem.addActor(governorLabel);
+                    governorItem.setShowDot(governor[1]);
+                    this.menu.addMenuItem(governorItem);
+                    
+                    if(this.selector_present){
+                        governorItem.connect('activate', Lang.bind(this, function() {
+                            for (i = 0 ;i < this._get_cpu_number();i++){
+                                this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text+" -c "+i);
+                            }
+                        }));
+                    }
                 }
             }
+        }
+    
+        if(!this.util_present){
+            let errorItem;
+            errorItem = new PopupMenu.PopupMenuItem("");
+            let errorLabel=new St.Label({
+                text:"Please install cpupower or cpufreq-utils",
+                style_class: "sm-label"
+            });
+            errorItem.addActor(errorLabel);
+            this.menu.addMenuItem(errorItem);
+        }
+        
+        if(!this.selector_present){
+            let errorItem;
+            errorItem = new PopupMenu.PopupMenuItem("");
+            let errorLabel=new St.Label({
+                text:"Please install cpufreq-selector",
+                style_class: "sm-label"
+            });
+            errorItem.addActor(errorLabel);
+            this.menu.addMenuItem(errorItem);
         }
     
     },
