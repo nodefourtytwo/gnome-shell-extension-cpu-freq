@@ -15,7 +15,10 @@ You need CPU Frequency scaling set up to use it.
 You also need cpufreq-selector, which is usually in the gnome-applets package.
 
 cpupower is now also supported
+
 **Fedora 18**: cpupower is available in the kernel-tools package
+
+**Ubuntu 12.x**: sudo apt-get install cpufrequtils
 
 The best way to test you have these is to type in terminal:
 > which cpufreq-info  
