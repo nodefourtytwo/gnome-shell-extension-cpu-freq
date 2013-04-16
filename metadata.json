@@ -1,1 +1,11 @@
-{"shell-version": ["3.4"], "uuid": "cpufreq@nodefourtytwo.net", "name": "CPU Freq", "description": "View and Modify CPU Frequency"}
+{
+    "name": "CPU Freq",
+    "description": "View and Modify CPU Frequency",
+    "uuid": "cpufreq@nodefourtytwo.net",
+    "shell-version": [
+        "3.2",
+        "3.4",
+        "3.6",
+        "3.8"
+    ]
+}
