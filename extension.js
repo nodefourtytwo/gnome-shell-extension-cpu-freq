@@ -70,11 +70,11 @@ CpuFreq.prototype = {
         let governorslist=new Array();
         if (this.cpuFreqInfoPath){
             //get the list of available governors
-            let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -g");
+            let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" frequency-info -g");
             if(cpufreq_output1[0]) governorslist = cpufreq_output1[1].toString().split("\n", 1)[0].split(" ");
             
             //get the actual governor
-            let cpufreq_output2 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -p");
+            let cpufreq_output2 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" frequency-info -p");
             if(cpufreq_output2[0]) governoractual = cpufreq_output2[1].toString().split("\n", 1)[0].split(" ")[2].toString();
             
             for each (let governor in governorslist){
