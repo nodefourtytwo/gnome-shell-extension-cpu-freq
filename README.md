@@ -62,7 +62,7 @@ I'm open to any advice to make this easier/better.
 
 Thanks
 ------
-https://github.com/Farsx
+https://github.com/Farsx  
 https://github.com/LeCoyote  
-https://github.com/victornoel
-https://github.com/sonic414
+https://github.com/victornoel  
+https://github.com/sonic414  
