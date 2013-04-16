@@ -32,9 +32,9 @@ CpuFreq.prototype = {
             style_class: "cpufreq-label"
         });
         
-        this.cpuFreqInfoPath = this._detectCpuFreqInfo();
+        this.cpuFreqInfoPath = GLib.find_program_in_path('cpufreq-info');
         if(!this.cpuFreqInfoPath){
-            this.cpuPowerPath = this._detectCpuPower();
+            this.cpuPowerPath = GLib.find_program_in_path('cpupower');
             if(this.cpuPowerPath){
                 this.cpupower = true;
             }
@@ -43,7 +43,7 @@ CpuFreq.prototype = {
             }
         }
 
-        this.cpuFreqSelectorPath = this._detectCpuFreqSelector();
+        this.cpuFreqSelectorPath = GLib.find_program_in_path('cpufreq-selector');
         if(!this.cpuFreqSelectorPath){
             this.selector_present = false;
         }
@@ -60,33 +60,6 @@ CpuFreq.prototype = {
         }
     },
 
-    _detectCpuFreqInfo: function(){
-        //detect if cpufreq-info is installed
-        let ret = GLib.spawn_command_line_sync("which cpufreq-info");
-        if ( (ret[0]) && (ret[3] == 0) ) {//if yes
-            return ret[1].toString().split("\n", 1)[0];//find the path of cpufreq-info
-        }
-        return null;
-    },
-    
-    _detectCpuPower: function(){
-        //detect if cpufreq-info is installed
-        let ret = GLib.spawn_command_line_sync("which cpupower");
-        if ( (ret[0]) && (ret[3] == 0) ) {//if yes
-            return ret[1].toString().split("\n", 1)[0] + " frequency-info";//find the path of cpupower
-        }
-        return null;
-    },
-    
-    _detectCpuFreqSelector: function(){
-        //detect if cpufreq-selector is installed
-        let ret = GLib.spawn_command_line_sync("which cpufreq-selector");
-        if ( (ret[0]) && (ret[3] == 0) ) {//if yes
-            return ret[1].toString().split("\n", 1)[0];//find the path of cpufreq-info
-        }
-        return null;
-    },
-    
     _get_cpu_number: function(){
         let ret = GLib.spawn_command_line_sync("grep -c processor /proc/cpuinfo");
         return ret[1].toString().split("\n", 1)[0];
