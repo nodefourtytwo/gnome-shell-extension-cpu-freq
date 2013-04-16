@@ -68,6 +68,7 @@ CpuFreq.prototype = {
     _get_governors: function(){
         let governors=new Array();
         let governorslist=new Array();
+        let governoractual='';
         if (this.cpuFreqInfoPath){
             //get the list of available governors
             let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -g");
