@@ -71,11 +71,11 @@ CpuFreq.prototype = {
         let governoractual='';
         if (this.cpuFreqInfoPath){
             //get the list of available governors
-            let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" frequency-info -g");
+            let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -g");
             if(cpufreq_output1[0]) governorslist = cpufreq_output1[1].toString().split("\n", 1)[0].split(" ");
             
             //get the actual governor
-            let cpufreq_output2 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" frequency-info -p");
+            let cpufreq_output2 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -p");
             if(cpufreq_output2[0]) governoractual = cpufreq_output2[1].toString().split("\n", 1)[0].split(" ")[2].toString();
             
             for each (let governor in governorslist){
@@ -89,11 +89,11 @@ CpuFreq.prototype = {
         }
         if(this.cpuPowerPath){
              //get the list of available governors
-            let cpupower_output1 = GLib.spawn_command_line_sync(this.cpuPowerPath+" -g");
+            let cpupower_output1 = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -g");
             if(cpupower_output1[0]) governorslist = cpupower_output1[1].toString().split("\n", 2)[1].split(" ");
             
             //get the actual governor
-            let cpupower_output2 = GLib.spawn_command_line_sync(this.cpuPowerPath+" -p");
+            let cpupower_output2 = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -p");
             if(cpupower_output2[0]) governoractual = cpupower_output2[1].toString().split("\n", 2)[1].split(" ")[2].toString();
             
             for each (let governor in governorslist){
