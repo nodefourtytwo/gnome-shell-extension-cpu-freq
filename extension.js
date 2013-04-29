@@ -43,8 +43,8 @@ CpuFreq.prototype = {
             }
         }
 
-        this.cpuFreqSelectorPath = GLib.find_program_in_path('cpufreq-selector');
-        if(!this.cpuFreqSelectorPath){
+        this.cpuFreqSelectorCommand = this._detectCpuFreqSelector();
+        if(!this.cpuFreqSelectorCommand){
             this.selector_present = false;
         }
 
@@ -60,6 +60,56 @@ CpuFreq.prototype = {
         }
     },
 
+    _detectCpuFreqSelector: function(){
+        //detect if cpufreq-selector is installed
+        let ret = GLib.find_program_in_path('cpufreq-selector');
+        if (ret) {//if yes
+            return ret;
+        }
+        //detect if cpufreq-set is installed
+        ret = GLib.find_program_in_path('cpufreq-set');
+        if (ret) {//if yes
+            //now check which GUI sudo we can use: gksudo, pkexec or sudo
+            let authorize = GLib.find_program_in_path('gksudo');
+            if (authorize) {//if yes
+                return authorize + " -- " + ret + " -g [governor] -c [cpu]";//find the path of gksudo and prepend it to cpufreq-set
+            }
+            //TODO: pkexec will not work at this time, probably because of "double forking" problem reported elsewhere:
+            //      https://bugs.launchpad.net/ubuntu/+source/unity/+bug/957641W
+            //authorize = GLib.find_program_in_path('pkexec');
+            //if (authorize) {//if yes
+            //    return authorize + " " + ret + " -g [governor] -c [cpu]";//find the path of pkexec and prepend it to cpufreq-set
+            //}
+            //try to fallback to use sudo with ssk-askpass
+            authorize = GLib.find_program_in_path('sudo');
+            if (authorize) {
+                let sh = GLib.find_program_in_path('sh');
+
+                let askpass = GLib.spawn_command_line_sync('echo $SUDO_ASKPASS');
+                //if SUDO_ASKPASS is set already, we do should not set it to something else
+                if (askpass && askpass[1] && askpass[1].toString().split("\n", 1)[0]) {
+                    askpass = '';
+                }
+                else {
+                    askpass = GLib.find_program_in_path('ssh-askpass');
+                    //if there is ssh-askpass available, try to use it for our sudo command
+                    if (askpass) {
+                        askpass = "export SUDO_ASKPASS=" + askpass + " && ";
+                    }
+                    //else do not use sudo at all
+                    else {
+                        sh = false;
+                    }
+                }
+
+                if (sh) {
+                    return sh + " -c '" + askpass + authorize + " -A -k -- " + ret + " -g [governor] -c [cpu]'";
+                }
+            }
+        }
+        return null;
+    },
+    
     _get_cpu_number: function(){
         let ret = GLib.spawn_command_line_sync("grep -c processor /proc/cpuinfo");
         return ret[1].toString().split("\n", 1)[0];
@@ -102,7 +152,7 @@ CpuFreq.prototype = {
                     governortemp=[governor,true];
                 else
                     governortemp=[governor,false];
-                governors.push(governortemp);                
+                governors.push(governortemp);
             }
         }
         
@@ -156,8 +206,9 @@ CpuFreq.prototype = {
                     
                     if(this.selector_present){
                         governorItem.connect('activate', Lang.bind(this, function() {
-                            for (i = 0 ;i < this._get_cpu_number();i++){
-                                this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text+" -c "+i);
+                            let command = this.cpuFreqSelectorCommand.replace('[governor]', governorLabel.text);
+                            for (let i = 0 ;i < this._get_cpu_number();i++){
+                                this.governorchanged=GLib.spawn_command_line_async(command.replace('[cpu]', i));
                             }
                         }));
                     }
