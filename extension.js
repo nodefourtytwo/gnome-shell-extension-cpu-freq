@@ -131,7 +131,23 @@ CpuFreq.prototype = {
         else{
             this.title="!"
         }
-        
+
+        // Intel P-state introduced in linux-3.9 (default in linux-3.10 I think)
+        // doesn't support directly frequencies. It allows only to switch between
+        // the two available governors: performance and powersave. 
+        // Show the governor name instead of the frequency
+        if(!this.title) {
+            let governors = this._get_governors();
+
+            // find active governor
+            let i = 0;
+            while (!governors[i][1]){
+                i++;
+            }
+            this.title = governors[i][0];
+
+        }
+
         this.statusLabel.set_text(this.title);
     },
     
