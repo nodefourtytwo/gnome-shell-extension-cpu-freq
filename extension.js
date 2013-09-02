@@ -84,7 +84,10 @@ CpuFreq.prototype = {
                     governortemp=[governor,true];
                 else
                     governortemp=[governor,false];
-                governors.push(governortemp);                
+
+                // Capitalize the First letter of the governor name
+                governortemp[0] = governortemp[0][0].toUpperCase() + governortemp[0].slice(1);
+                governors.push(governortemp);
             }
         }
         if(this.cpuPowerPath){
