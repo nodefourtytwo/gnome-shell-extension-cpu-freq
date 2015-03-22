@@ -1,22 +1,23 @@
-const St = imports.gi.St;
-const Lang = imports.lang;
+
 const PanelMenu = imports.ui.panelMenu;
-const PopupMenu = imports.ui.popupMenu;
+const St = imports.gi.St;
 const Main = imports.ui.main;
+const Shell = imports.gi.Shell;
 const GLib = imports.gi.GLib;
 const Util = imports.misc.util;
+const Clutter = imports.gi.Clutter
 const Mainloop = imports.mainloop;
+const Lang = imports.lang;
+const PopupMenu = imports.ui.popupMenu;
 
-function CpuFreq() {
-    this._init.apply(this, arguments);
-}
+let _CpuFreqButton = null;
 
 
-CpuFreq.prototype = {
-    __proto__: PanelMenu.SystemStatusButton.prototype,
+const CpuFreqButton = new Lang.Class({
+    Name: 'CpuFreqButton',
+    Extends: PanelMenu.Button,
 
-    _init: function(){
-        PanelMenu.SystemStatusButton.prototype._init.call(this, 'cpufreq');
+    _init: function() {    
         this.governorchanged = false;
         
         //cpupower used
@@ -27,48 +28,47 @@ CpuFreq.prototype = {
         //cpufreq-selector installed
         this.selector_present = true;
         
-        this.statusLabel = new St.Label({
-            text: "--",
-            style_class: "cpufreq-label"
-        });
+        this.cpuFreqSelectorPath = GLib.find_program_in_path('cpufreq-selector');
+        if(!this.cpuFreqSelectorPath){
+            this.selector_present = false;
+        }
         
         this.cpuFreqInfoPath = GLib.find_program_in_path('cpufreq-info');
         if(!this.cpuFreqInfoPath){
             this.cpuPowerPath = GLib.find_program_in_path('cpupower');
             if(this.cpuPowerPath){
                 this.cpupower = true;
+                this.selector_present = true;
             }
             else{
                 this.util_present = false;
             }
         }
-
-        this.cpuFreqSelectorPath = GLib.find_program_in_path('cpufreq-selector');
-        if(!this.cpuFreqSelectorPath){
-            this.selector_present = false;
-        }
-
-        this._build_ui();
-        
-        if(this.util_present){
-            //update every 5 seconds
-            event = GLib.timeout_add_seconds(0, 5, Lang.bind(this, function () {
-                this._update_freq();
-                this._update_popup();
-                return true;
-            }));
-        }
-    },
-
-    _get_cpu_number: function(){
-        let ret = GLib.spawn_command_line_sync("grep -c processor /proc/cpuinfo");
-        return ret[1].toString().split("\n", 1)[0];
-    },
     
+        // build ui
+        this.parent(St.Align.START);
+        this.buttonText = new St.Label({
+            text: "--",
+            y_align: Clutter.ActorAlign.CENTER
+        });
+        this.actor.add_actor(this.buttonText);
+             
+        // check label and menu evry 60 secs
+        this._refresh_rate = 5;
+        this._timeout = Mainloop.timeout_add_seconds(this._refresh_rate, Lang.bind(this, this._refresh));
+             
+        this._cpuPowerPath = GLib.find_program_in_path('cpupower')   
+        this._pkexec = GLib.find_program_in_path('pkexec') 
+        // refresh view
+        this._refresh();
+    },
+   
+   
     _get_governors: function(){
         let governors=new Array();
         let governorslist=new Array();
         let governoractual='';
+        
         if (this.cpuFreqInfoPath){
             //get the list of available governors
             let cpufreq_output1 = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -g");
@@ -111,39 +111,29 @@ CpuFreq.prototype = {
         
         return governors;
     },
-
-    _update_freq: function() {
+   
+    _refresh_button_label: function() {
+        // set the button label
+        let title = "--"
         let freqInfo=null;
-        if(this.util_present){
-            if (this.cpuFreqInfoPath){
-                let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");//get the output of the cpufreq-info -fm command
-                if(cpufreq_output[0]) freqInfo = cpufreq_output[1].toString().split("\n", 1)[0];
-                if (freqInfo){
-                    this.title=freqInfo;
-                }
-            }
-            
-            if (this.cpuPowerPath){
-                let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");//get output of cpupower frequency-info -fm
-                if(cpupower_output[0]) freqInfo = cpupower_output[1].toString().split("\n")[1];
-                if (freqInfo){
-                    this.title=freqInfo;
-                }
-            }
+        let cpupower_output = GLib.spawn_command_line_sync(this._cpuPowerPath+" frequency-info -fm");
+         
+        if(cpupower_output[0])  {
+            freqInfo = cpupower_output[1].toString().split("\n")[1];
+            title=freqInfo;
+        } else{
+            title="!";
         }
-        else{
-            this.title="!"
-        }
-        
-        this.statusLabel.set_text(this.title);
+        this.buttonText.set_text(title);
     },
-    
-    _update_popup: function() {
+   
+    _refresh_button_menu: function() {   
+        // create new menu items
         this.menu.removeAll();
         if(this.util_present){  
             //get the available governors
             this.governors = this._get_governors();
-            
+                
             //build the popup menu
             if (this.governors.length>0){
                 let governorItem;
@@ -153,21 +143,24 @@ CpuFreq.prototype = {
                         text:governor[0],
                         style_class: "sm-label"
                     });
-                    governorItem.addActor(governorLabel);
-                    governorItem.setShowDot(governor[1]);
+                    governorItem.actor.add_child(governorLabel);
+                    governorItem.setOrnament(governor[1]);
                     this.menu.addMenuItem(governorItem);
                     
                     if(this.selector_present){
-                        governorItem.connect('activate', Lang.bind(this, function() {
-                            for (i = 0 ;i < this._get_cpu_number();i++){
-                                this.governorchanged=GLib.spawn_command_line_async(this.cpuFreqSelectorPath+" -g "+governorLabel.text+" -c "+i);
-                            }
+                        governorItem.connect('activate', Lang.bind(this, function() {                          
+                            if(this.cpupower) {
+                                this.governorchanged=Util.trySpawnCommandLine(this._pkexec + " " 
+                                    + this.cpuPowerPath+" frequency-set -g "+governorLabel.text);                           
+                            } else {
+                                this.governorchanged=Util.trySpawnCommandLine(this._pkexec + " "
+                                    + this.cpuFreqSelectorPath+" -g "+governorLabel.text);
+                            }                            
                         }));
                     }
                 }
             }
         }
-    
         if(!this.util_present){
             let errorItem;
             errorItem = new PopupMenu.PopupMenuItem("");
@@ -175,7 +168,7 @@ CpuFreq.prototype = {
                 text:"Please install cpupower or cpufreq-utils",
                 style_class: "sm-label"
             });
-            errorItem.addActor(errorLabel);
+            errorItem.actor.add_child(errorLabel);
             this.menu.addMenuItem(errorItem);
         }
         
@@ -186,40 +179,42 @@ CpuFreq.prototype = {
                 text:"Please install cpufreq-selector",
                 style_class: "sm-label"
             });
-            errorItem.addActor(errorLabel);
+            errorItem.actor.add_child(errorLabel);
             this.menu.addMenuItem(errorItem);
         }
-    
     },
-    
-    _build_ui: function() {
-        // destroy all previously created children, and add our statusLabel
-        this.actor.get_children().forEach(function(c) {
-            c.destroy()
-        });
-        
-        this.actor.add_actor(this.statusLabel);
-        this._update_freq();
-        this._update_popup();
-        
+   
+    _refresh: function() {   
+        this._refresh_button_label();
+        this._refresh_button_menu();
+        return true;
+    },
+
+    destroy: function() {
+        if(this._timeout) {
+            Mainloop.source_remove(this._timeout);
+            this._timeout = null;
+        }
+        this.parent();
     }
+});
 
+// init function
+function init(metadata) {
 }
 
-function init() {
-//do nothing
-}
-
-let indicator;
-let event=null;
-
+// enable function
 function enable() {
-    indicator = new CpuFreq();
-    Main.panel.addToStatusArea('cpufreq', indicator);
+    _CpuFreqButton = new CpuFreqButton;
+    Main.panel.addToStatusArea('pu-freq-button', _CpuFreqButton);  
 }
 
+// disable function
 function disable() {
-    indicator.destroy();
-    Mainloop.source_remove(event);
-    indicator = null;
+    if(_CpuFreqButton) {
+        _CpuFreqButton.destroy();
+        _CpuFreqButton = null;
+    }
 }
+
+
