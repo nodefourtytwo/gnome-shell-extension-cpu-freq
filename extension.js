@@ -124,15 +124,17 @@ const CpuFreq = new Lang.Class({
         let freqInfo=null;
         if(this.util_present){
             if (this.cpuFreqInfoPath){
-                let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");//get the output of the cpufreq-info -fm command
+                //get the output of the cpufreq-info -fm command
+                let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");
                 if(cpufreq_output[0]) freqInfo = cpufreq_output[1].toString().split("\n", 1)[0];
                 if (freqInfo){
                     this.title=freqInfo;
                 }
             }
-            
+
             if (this.cpuPowerPath){
-                let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");//get output of cpupower frequency-info -fm
+                //get output of cpupower frequency-info -fm
+                let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");
                 if(cpupower_output[0]) freqInfo = cpupower_output[1].toString().split("\n")[1];
                 if (freqInfo){
                     this.title=freqInfo;
@@ -157,7 +159,7 @@ const CpuFreq = new Lang.Class({
                 let governorItem;
                 for each (let governor in this.governors){
                     governorItem = new PopupMenu.PopupMenuItem("");
-                    let governorLabel=new St.Label({
+                    let governorLabel = new St.Label({
                         text:governor[0],
                         style_class: "sm-label"
                     });
