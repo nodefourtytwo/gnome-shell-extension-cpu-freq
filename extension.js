@@ -1,3 +1,4 @@
+const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 const Lang = imports.lang;
 const PanelMenu = imports.ui.panelMenu;
@@ -7,16 +8,28 @@ const GLib = imports.gi.GLib;
 const Util = imports.misc.util;
 const Mainloop = imports.mainloop;
 
-function CpuFreq() {
-    this._init.apply(this, arguments);
-}
+const Gettext = imports.gettext.domain('gnome-shell-extensions');
+const _ = Gettext.gettext;
 
+const CpuFreq = new Lang.Class({
+    Name: 'CpuFreq',
+    Extends: PanelMenu.Button,
 
-CpuFreq.prototype = {
-    __proto__: PanelMenu.SystemStatusButton.prototype,
+    _init: function() {
+        this.parent(0.0, _("Cpu frequency"));
+        let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
 
-    _init: function(){
-        PanelMenu.SystemStatusButton.prototype._init.call(this, 'cpufreq');
+        this.statusLabel = new St.Label({
+            text: "--",
+            style_class: "cpufreq-label"
+        });
+        hbox.add_child(this.statusLabel);
+
+        hbox.add_child(new St.Label({ text: '\u25BE',
+                                    y_expand: true,
+                                    y_align: Clutter.ActorAlign.CENTER }));
+        this.actor.add_child(hbox);
+
         this.governorchanged = false;
         
         //cpupower used
@@ -26,11 +39,6 @@ CpuFreq.prototype = {
         this.util_present = true;
         //cpufreq-selector installed
         this.selector_present = true;
-        
-        this.statusLabel = new St.Label({
-            text: "--",
-            style_class: "cpufreq-label"
-        });
         
         this.cpuFreqInfoPath = GLib.find_program_in_path('cpufreq-info');
         if(!this.cpuFreqInfoPath){
@@ -116,15 +124,17 @@ CpuFreq.prototype = {
         let freqInfo=null;
         if(this.util_present){
             if (this.cpuFreqInfoPath){
-                let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");//get the output of the cpufreq-info -fm command
+                //get the output of the cpufreq-info -fm command
+                let cpufreq_output = GLib.spawn_command_line_sync(this.cpuFreqInfoPath+" -fm");
                 if(cpufreq_output[0]) freqInfo = cpufreq_output[1].toString().split("\n", 1)[0];
                 if (freqInfo){
                     this.title=freqInfo;
                 }
             }
-            
+
             if (this.cpuPowerPath){
-                let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");//get output of cpupower frequency-info -fm
+                //get output of cpupower frequency-info -fm
+                let cpupower_output = GLib.spawn_command_line_sync(this.cpuPowerPath+" frequency-info -fm");
                 if(cpupower_output[0]) freqInfo = cpupower_output[1].toString().split("\n")[1];
                 if (freqInfo){
                     this.title=freqInfo;
@@ -149,12 +159,17 @@ CpuFreq.prototype = {
                 let governorItem;
                 for each (let governor in this.governors){
                     governorItem = new PopupMenu.PopupMenuItem("");
-                    let governorLabel=new St.Label({
+                    let governorLabel = new St.Label({
                         text:governor[0],
                         style_class: "sm-label"
                     });
-                    governorItem.addActor(governorLabel);
-                    governorItem.setShowDot(governor[1]);
+
+                    governorItem.actor.add(governorLabel);
+                    if (governor[1] == true) {
+                        governorItem.setOrnament(PopupMenu.Ornament.DOT)
+                    } else {
+                        governorItem.setOrnament(PopupMenu.Ornament.NONE)
+                    }
                     this.menu.addMenuItem(governorItem);
                     
                     if(this.selector_present){
@@ -194,17 +209,16 @@ CpuFreq.prototype = {
     
     _build_ui: function() {
         // destroy all previously created children, and add our statusLabel
-        this.actor.get_children().forEach(function(c) {
-            c.destroy()
-        });
-        
-        this.actor.add_actor(this.statusLabel);
+        //this.actor.get_children().forEach(function(c) {
+        //    c.destroy()
+        //});
+
+        //this.actor.add_actor(this.statusLabel);
         this._update_freq();
         this._update_popup();
-        
-    }
 
-}
+    },
+});
 
 function init() {
 //do nothing
